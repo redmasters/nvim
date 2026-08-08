@@ -16,7 +16,7 @@ return {
           name = "Toggle (Copilot Completion)",
           color = {
             enabled = "azure",
-            disabled = "orange",
+            disabled = "red",
           },
           get = function()
             return vim.g.snacks_copilot_enabled
