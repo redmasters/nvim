@@ -1,6 +1,9 @@
 --- ~/.config/nvim/lua/plugins/snacks.nvim
 return {
   "folke/snacks.nvim",
+  keys = {
+    { "<leader><space>", false },
+  },
   --- Updated this section to align with approach taken in other LazyVim snacks configs
   ---@diagnostic disable-next-line: unused-local
   opts = function(_, opts)
