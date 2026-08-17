@@ -59,6 +59,8 @@ CREATE TABLE clientes.cliente (
       name VARCHAR(150) NOT NULL,
 
       CONSTRAINT uq_category_restaurant_name UNIQUE (restaurant_id, name),
+      CONSTRAINT uq_product_restaurant_name UNIQUE (restaurant_id, name),
+      CONSTRAINT uq_category_restaurant UNIQUE (category_id, restaurant_id),
       CONSTRAINT fk_cliente_usuario
             FOREIGN KEY (usuario_id)
                   REFERENCES identidade.usuario (usuario_id)
@@ -86,6 +88,10 @@ CREATE TABLE clientes.cliente (
 
       CONSTRAINT uq_category_restaurant_name
           UNIQUE (restaurant_id, name),
+      CONSTRAINT uq_product_restaurant_name
+          UNIQUE (restaurant_id, name),
+      CONSTRAINT uq_category_restaurant
+          UNIQUE (category_id, restaurant_id),
       CONSTRAINT fk_cliente_usuario
           FOREIGN KEY (usuario_id)
           REFERENCES identidade.usuario (usuario_id)
