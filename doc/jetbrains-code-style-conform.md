@@ -17,6 +17,10 @@ format.sh do produto JetBrains
     ↓
 XML de Code Style
     ↓
+pós-processador de whitespace para CREATE TABLE
+    ↓
+validador baseado no SQL Style Guide
+    ↓
 buffer formatado no Neovim
 ```
 
@@ -29,6 +33,32 @@ A integração SQL usa componentes que já estavam instalados:
 
 Não é necessário instalar SQLFluff ou pgFormatter.
 
+## Regra obrigatória de validação
+
+Toda execução do formatter termina com uma validação baseada em
+<https://www.sqlstyle.guide/>. O validador cobre apenas regras que podem ser
+verificadas deterministicamente sem interpretar a semântica da consulta:
+
+- palavras-chave estruturais em maiúsculas;
+- ausência de tabs e espaços no fim das linhas;
+- uma definição por linha em `CREATE TABLE`;
+- `PRIMARY KEY` inline;
+- separação e recuo consistente de constraints;
+- constraints `UNIQUE` nomeadas em duas linhas (`CONSTRAINT` e `UNIQUE`);
+- fechamento consistente de `CREATE TABLE`.
+
+O guia recomenda quatro espaços para colunas de `CREATE TABLE`, mas também
+enfatiza que o principal é escolher um estilo e aplicá-lo consistentemente.
+Esta configuração adota explicitamente a variação do projeto: 6 espaços para
+colunas/`CONSTRAINT`, 10 para componentes de FK e 2 para `);`. Regras de nomes,
+modelagem, escolha de tipos e portabilidade continuam exigindo revisão humana.
+
+Antes de qualquer nova alteração no formatter, o resultado deve ser comparado
+com <https://www.sqlstyle.guide/>. Se a formatação solicitada conflitar com o
+guia, a alteração não deve ser aplicada até o usuário autorizar explicitamente
+a exceção. Preferências já autorizadas do projeto, como o recuo 6/10/2, não
+precisam ser perguntadas novamente.
+
 ## Arquivos da implementação
 
 A configuração está versionada nestes caminhos do repositório:
@@ -36,7 +66,10 @@ A configuração está versionada nestes caminhos do repositório:
 | Arquivo | Responsabilidade |
 | --- | --- |
 | `.config/nvim/lua/plugins/jetbrains-sql-format.lua` | Registra `jetbrains_sql` no Conform e associa o formatter ao filetype `sql`. |
-| `.config/nvim/scripts/jetbrains-sql-format.sh` | Valida os caminhos, cria um ambiente DataGrip isolado e executa `format.sh -s`. |
+| `.config/nvim/scripts/jetbrains-sql-format.sh` | Valida os caminhos, cria um ambiente DataGrip isolado, executa `format.sh -s` e chama o pós-processador. |
+| `.config/nvim/scripts/sql_style_lexer.py` | Mascara comentários, strings, identificadores citados e dollar quotes para impedir alterações dentro de conteúdo não executável. |
+| `.config/nvim/scripts/jetbrains-sql-postprocess.py` | Normaliza apenas whitespace de `CREATE TABLE`: `PRIMARY KEY` inline, FK com recuo de 4 espaços e fechamento com recuo de 2. |
+| `.config/nvim/scripts/validate-sqlstyle-guide.py` | Valida automaticamente as regras mecanicamente verificáveis adotadas de <https://www.sqlstyle.guide/>. |
 | `.config/nvim/lua/plugins/jetbrains-sql-format.lua` | Define `Ctrl+Alt+L` localmente nos buffers SQL, nos modos normal e visual. |
 | `.config/nvim/tests/test-jetbrains-sql-format.sh` | Testa o contrato do wrapper sem executar o DataGrip real. |
 | `.config/nvim/tests/test-jetbrains-sql-conform.lua` | Testa o spec do Conform, descoberta do XML e atalhos. |
@@ -408,6 +441,7 @@ Depois confira:
 
 ```sh
 test -x ~/.config/nvim/scripts/jetbrains-sql-format.sh
+test -x ~/.config/nvim/scripts/jetbrains-sql-postprocess.py
 test -x ~/.local/share/JetBrains/Toolbox/apps/datagrip/bin/format.sh
 ```
 
@@ -459,6 +493,11 @@ sh -n \
   .config/nvim/scripts/jetbrains-sql-format.sh \
   .config/nvim/tests/test-jetbrains-sql-format.sh
 
+python3 -m py_compile \
+  .config/nvim/scripts/sql_style_lexer.py \
+  .config/nvim/scripts/jetbrains-sql-postprocess.py \
+  .config/nvim/scripts/validate-sqlstyle-guide.py
+
 sh .config/nvim/tests/test-jetbrains-sql-format.sh
 
 nvim --headless \
@@ -466,7 +505,7 @@ nvim --headless \
   +qa
 ```
 
-O primeiro teste usa um formatter falso e valida o contrato do wrapper. O segundo testa o spec do Conform e os atalhos. A validação end-to-end com o DataGrip real deve usar um fixture temporário e comparar o arquivo resultante.
+O primeiro teste usa um formatter falso e valida o contrato do wrapper e a saída exata do pós-processador. O segundo testa o spec do Conform, a descoberta do XML e os atalhos. A validação end-to-end com o DataGrip real deve usar um fixture temporário e comparar o arquivo resultante byte a byte.
 
 ## Limitações conhecidas
 
@@ -475,6 +514,7 @@ O primeiro teste usa um formatter falso e valida o contrato do wrapper. O segund
 - O atalho atual seleciona explicitamente `jetbrains_sql`.
 - Formatação por range/seleção não foi implementada; o buffer inteiro é formatado.
 - O formatter JetBrains é mais lento que formatters nativos.
+- O recuo DDL exato de 6/10/2 espaços não é representável somente pelas opções do DataGrip; o wrapper aplica uma normalização de whitespace depois do formatter oficial.
 - Um XML bem formado pode conter seções ignoradas pelo produto errado.
 - DataGrip não deve ser tratado como formatter Java/Kotlin.
 - `.editorconfig` em diretórios pais pode influenciar ou sobrescrever regras coincidentes, dependendo do produto e da configuração.
