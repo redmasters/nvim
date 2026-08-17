@@ -58,9 +58,8 @@ CREATE TABLE clientes.cliente (
       restaurant_id BIGINT NOT NULL,
       name VARCHAR(150) NOT NULL,
 
-      CONSTRAINT uq_category_restaurant_name UNIQUE (restaurant_id, name),
-      CONSTRAINT uq_product_restaurant_name UNIQUE (restaurant_id, name),
-      CONSTRAINT uq_category_restaurant UNIQUE (category_id, restaurant_id),
+      CONSTRAINT uq_category_restaurant_name
+            UNIQUE (restaurant_id, name), CONSTRAINT uq_product_restaurant_name UNIQUE (restaurant_id, name), CONSTRAINT uq_category_restaurant UNIQUE (category_id, restaurant_id),
       CONSTRAINT fk_cliente_usuario
             FOREIGN KEY (usuario_id)
                   REFERENCES identidade.usuario (usuario_id)
@@ -144,12 +143,15 @@ fi
 
 QUOTED_AND_COMMENTED="$TMP_ROOT/quoted-and-commented.sql"
 cat > "$QUOTED_AND_COMMENTED" <<'SQL'
-SELECT 'create table constraint unique', "default", $$foreign key on delete$$;
--- create table constraint unique
+SELECT 'CONSTRAINT uq_hidden UNIQUE (a)', "default", $$CONSTRAINT uq_body UNIQUE (b)$$;
+-- CONSTRAINT uq_comment UNIQUE (c)
 /* outer create table
-   /* nested unique constraint */
+   /* nested CONSTRAINT uq_nested UNIQUE (d) */
    on delete cascade */
 SQL
+cp "$QUOTED_AND_COMMENTED" "$QUOTED_AND_COMMENTED.before"
+"$POSTPROCESSOR" "$QUOTED_AND_COMMENTED"
+cmp -s "$QUOTED_AND_COMMENTED.before" "$QUOTED_AND_COMMENTED" || fail "postprocessor split quoted/commented constraints"
 "$VALIDATOR" "$QUOTED_AND_COMMENTED" || fail "validator treated quoted/commented text as executable SQL"
 
 COMMENTED_PRIMARY="$TMP_ROOT/commented-primary.sql"

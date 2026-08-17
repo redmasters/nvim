@@ -22,15 +22,45 @@ INLINE_NAMED_UNIQUE = re.compile(
     r'^(CONSTRAINT\s+(?:"(?:[^"]|"")*"|\S+))\s+(UNIQUE\b.*)$',
     re.IGNORECASE,
 )
+ADJACENT_NAMED_UNIQUE = re.compile(
+    r'\s+(?=CONSTRAINT\s+(?:"(?:[^"]|"")*"|\S+)\s+UNIQUE\b)',
+    re.IGNORECASE,
+)
 
 
 def indentation(line: str) -> int:
     return len(line) - len(line.lstrip(" "))
 
 
+def split_adjacent_named_unique_constraints(lines: list[str]) -> list[str]:
+    output: list[str] = []
+    lexical_state = new_lexical_state()
+
+    for line in lines:
+        masked_line = mask_non_code(line, lexical_state)
+        code_start = len(masked_line) - len(masked_line.lstrip(" "))
+        separators = [
+            match
+            for match in ADJACENT_NAMED_UNIQUE.finditer(masked_line)
+            if match.start() > code_start
+        ]
+        if not separators:
+            output.append(line)
+            continue
+
+        cursor = code_start
+        indent = line[:code_start]
+        for separator in separators:
+            output.append(indent + line[cursor : separator.start()].rstrip())
+            cursor = separator.end()
+        output.append(indent + line[cursor:].lstrip())
+
+    return output
+
+
 def normalize(source: str) -> str:
     had_final_newline = source.endswith("\n")
-    lines = source.splitlines()
+    lines = split_adjacent_named_unique_constraints(source.splitlines())
     output: list[str] = []
     create_indent: int | None = None
     body_indent: int | None = None
