@@ -11,6 +11,10 @@ usage() {
 SCHEME=$1
 SQL_FILE=$2
 FORMATTER=${JETBRAINS_DATAGRIP_FORMATTER:-"$HOME/.local/share/JetBrains/Toolbox/apps/datagrip/bin/format.sh"}
+SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+LEXER=$SCRIPT_DIR/sql_style_lexer.py
+POSTPROCESSOR=$SCRIPT_DIR/jetbrains-sql-postprocess.py
+VALIDATOR=$SCRIPT_DIR/validate-sqlstyle-guide.py
 CACHE_ROOT=${XDG_CACHE_HOME:-"$HOME/.cache"}/nvim/jetbrains-datagrip-formatter
 PROPERTIES_FILE=$CACHE_ROOT/idea.properties
 
@@ -26,6 +30,21 @@ PROPERTIES_FILE=$CACHE_ROOT/idea.properties
 
 [ -x "$FORMATTER" ] || {
   printf 'DataGrip formatter is not executable: %s\n' "$FORMATTER" >&2
+  exit 69
+}
+
+[ -x "$POSTPROCESSOR" ] || {
+  printf 'SQL postprocessor is not executable: %s\n' "$POSTPROCESSOR" >&2
+  exit 69
+}
+
+[ -r "$LEXER" ] || {
+  printf 'SQL lexer helper is not readable: %s\n' "$LEXER" >&2
+  exit 69
+}
+
+[ -x "$VALIDATOR" ] || {
+  printf 'SQL Style Guide validator is not executable: %s\n' "$VALIDATOR" >&2
   exit 69
 }
 
@@ -46,4 +65,6 @@ EOF
 
 DATAGRIP_PROPERTIES=$PROPERTIES_FILE
 export DATAGRIP_PROPERTIES
-exec "$FORMATTER" -s "$SCHEME" "$SQL_FILE"
+"$FORMATTER" -s "$SCHEME" "$SQL_FILE"
+"$POSTPROCESSOR" "$SQL_FILE"
+exec "$VALIDATOR" "$SQL_FILE"
