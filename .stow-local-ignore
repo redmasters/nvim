@@ -1,4 +1,11 @@
-.git
-.gitignore
-README.md
-doc
+^\.git$
+^\.gitignore$
+^\.gitattributes$
+^\.stow-local-ignore$
+^\.hermes$
+^\.claude$
+^README.*$
+^LICENSE.*$
+^doc$
+^install\.sh$
+^uninstall\.sh$
