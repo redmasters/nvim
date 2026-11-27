@@ -10,7 +10,7 @@ usage() {
   cat <<EOF
 Uso: $0 [--sync] [--dry-run]
 
-  --sync      instala/atualiza os plugins depois do stow
+  --sync      instala os plugins conforme o lazy-lock.json
   --dry-run   mostra o que seria feito, sem alterar nada
   -h, --help  mostra esta ajuda
 
@@ -124,8 +124,8 @@ else
 fi
 
 if [ "$SYNC" -eq 1 ]; then
-  printf '\nSincronizando plugins (pode demorar na primeira execução)...\n'
-  run nvim --headless "+Lazy! sync" +qa
+  printf '\nInstalando plugins conforme o lazy-lock (pode demorar)...\n'
+  run nvim --headless "+Lazy! restore" +qa
 fi
 
 cat <<EOF

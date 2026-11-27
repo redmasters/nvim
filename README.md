@@ -46,7 +46,7 @@ O script:
 3. verifica conflitos com `stow -n` antes de alterar qualquer coisa;
 4. cria os links com `stow --no-folding --restow`.
 
-Para já baixar os plugins durante a instalação:
+Para já baixar os plugins durante a instalação (respeitando o `lazy-lock.json`):
 
 ```sh
 ./install.sh --sync
