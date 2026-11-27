@@ -117,6 +117,27 @@ Plugins, LSPs, parsers e cache ficam fora do repositório, em
 `~/.local/share/nvim` e `~/.cache/nvim`. Isso é intencional: o repositório guarda
 apenas configuração e o lock das versões.
 
+## Reprodutibilidade
+
+| Item | Como é controlado |
+| --- | --- |
+| Plugins | `lazy-lock.json` versionado; `:Lazy restore` aplica as versões exatas |
+| Extras do LazyVim | `lazyvim.json` (`lang.sql`, `lang.java`, `lang.rust`, etc.) |
+| Ferramentas do Mason | `ensure_installed` nos specs; o restante é instalado sob demanda |
+| Parsers do Treesitter | compilados na máquina; acompanham a versão do nvim-treesitter |
+
+- **Plugins**: `./install.sh --sync` roda `:Lazy restore`, então uma máquina nova
+  recebe exatamente as versões do `lazy-lock.json`. Só use `:Lazy update` quando
+  quiser atualizar e depois versione o lock.
+- **Mason**: os specs instalam automaticamente `stylua`, `shfmt` e
+  `sql-formatter`. LSPs, DAPs e linters das linguagens são baixados no primeiro
+  uso ou por `:MasonInstall <ferramenta>`.
+- **Treesitter**: os parsers são compilados localmente (precisa de `gcc` e,
+  para algumas linguagens, `node`). Rode `:TSUpdate` após atualizar plugins.
+- **Dados locais**: `~/.local/share/nvim` e `~/.cache/nvim` não são versionados
+  nem removidos pelo `uninstall.sh`; apagar esses diretórios força um download
+  completo na próxima abertura.
+
 ## Atalhos principais
 
 | Atalho | Ação |
